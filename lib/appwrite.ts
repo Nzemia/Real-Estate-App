@@ -2,7 +2,7 @@ import {
     Account,
     Avatars,
     Client,
-    OAuthProvider,
+    OAuthProvider
 } from "react-native-appwrite"
 import * as Linking from "expo-linking"
 import { openAuthSessionAsync } from "expo-web-browser"
@@ -10,7 +10,7 @@ import { openAuthSessionAsync } from "expo-web-browser"
 export const config = {
     platform: "com.realestate", // Appwrite .com Name you entered
     endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
-    projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
+    projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID
 }
 
 export const client = new Client()
@@ -28,21 +28,21 @@ export async function login() {
     try {
         const redirectUri = Linking.createURL("/")
 
-        const response = await account.createOAuth2Session(
+        const response = account.createOAuth2Token(
             OAuthProvider.Google,
             redirectUri
         )
 
-        if (!response) throw new Error("Failed to login")
+        if (!response)
+            throw new Error("Failed to login")
 
         const browserResult = await openAuthSessionAsync(
             response.toString(),
             redirectUri
         )
 
-        if (browserResult.type !== "success") {
-            throw new Error("Failed to login")
-        }
+        if (browserResult.type !== "success")
+            throw new Error("Create OAuth2 token failed")
 
         const url = new URL(browserResult.url)
 
@@ -83,7 +83,7 @@ export async function logout() {
     }
 }
 
-export async function getUser() {
+export async function getCurrentUser() {
     try {
         const response = await account.get()
 
@@ -95,9 +95,10 @@ export async function getUser() {
             )
             return {
                 ...response,
-                avatar: userAvatar.toString(),
+                avatar: userAvatar.toString()
             }
         }
+        return null
     } catch (error) {
         console.error(error)
         return null
