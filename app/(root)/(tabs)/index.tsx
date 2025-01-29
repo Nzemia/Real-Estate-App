@@ -1,11 +1,25 @@
 import { Cards, FeaturedCards } from "@/components/Cards"
 import Filters from "@/components/Filters"
+import NoResults from "@/components/NoResults"
 import Search from "@/components/Search"
 import icons from "@/constants/icons"
 import images from "@/constants/images"
-import { useGlobalContext } from "@/lib/global-provider"
-import { Link } from "expo-router"
 import {
+    getLatestProperties,
+    getProperties
+} from "@/lib/appwrite"
+import { useGlobalContext } from "@/lib/global-provider"
+import seed from "@/lib/seed"
+import { useAppwrite } from "@/lib/useAppwrite"
+import {
+    Link,
+    router,
+    useLocalSearchParams
+} from "expo-router"
+import { useEffect } from "react"
+import {
+    ActivityIndicator,
+    Button,
     FlatList,
     Image,
     Text,
@@ -15,23 +29,79 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function Index() {
-    const { user} = useGlobalContext()
+    const { user } = useGlobalContext()
+
+    const params = useLocalSearchParams<{
+        query?: string
+        filter?: string
+    }>()
+
+    const {
+        data: latestProperties,
+        loading: latestPropertiesLoading
+    } = useAppwrite({ fn: getLatestProperties })
+
+    const {
+        data: properties,
+        loading,
+        refetch
+    } = useAppwrite({
+        fn: getProperties,
+        params: {
+            filter: params.filter || "All",
+            query: params.query || "",
+            limit: 6
+        }
+    })
+
+    const handleCardPress = (id: string) =>
+        router.push(`/properties/${id}`)
+
+    useEffect(() => {
+        refetch({
+            filter: params.filter || "All",
+            query: params.query || "",
+            limit: 6
+        })
+    }, [params.filter, params.query])
     return (
         <SafeAreaView className="bg-white h-full">
+            {/** Seeding
+             * <Button title="Seed" onPress={seed} />
+             */}
             <FlatList
-                data={[1, 2, 3, 4]}
-                renderItem={({ item }) => <Cards />}
-                keyExtractor={item => item.toString()}
+                data={properties}
+                renderItem={({ item }) => (
+                    <Cards
+                        item={item}
+                        onPress={() =>
+                            handleCardPress(item.$id)
+                        }
+                    />
+                )}
+                keyExtractor={item => item.$id}
                 numColumns={2}
                 contentContainerClassName="pb-32"
                 columnWrapperClassName="flex gap-5 px-5"
                 showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                    loading ? (
+                        <ActivityIndicator
+                            size="large"
+                            className="text-primary-300 mt-5"
+                        />
+                    ) : (
+                        <NoResults />
+                    )
+                }
                 ListHeaderComponent={() => (
                     <View className="px-5">
                         <View className="flex flex-row mt-5 items-center justify-between">
                             <View className="flex flex-row items-center">
                                 <Image
-                                    source={{uri: user?.avatar}}
+                                    source={{
+                                        uri: user?.avatar
+                                    }}
                                     className="size-12 rounded-full"
                                 />
                                 <View className="flex flex-col items-start ml-2 justify-center">
@@ -65,21 +135,41 @@ export default function Index() {
                                 </TouchableOpacity>
                             </View>
 
-                            <FlatList
-                                data={[1, 2, 3]}
-                                renderItem={({ item }) => (
-                                    <FeaturedCards />
-                                )}
-                                keyExtractor={item =>
-                                    item.toString()
-                                }
-                                horizontal
-                                bounces={false}
-                                showsHorizontalScrollIndicator={
-                                    false
-                                }
-                                contentContainerClassName="flex gap-5 mt-5"
-                            />
+                            {latestPropertiesLoading ? (
+                                <ActivityIndicator
+                                    size="large"
+                                    className="text-primary-300"
+                                />
+                            ) : !latestProperties ||
+                              latestProperties.length ===
+                                  0 ? (
+                                <NoResults />
+                            ) : (
+                                <FlatList
+                                    data={latestProperties}
+                                    renderItem={({
+                                        item
+                                    }) => (
+                                        <FeaturedCards
+                                            item={item}
+                                            onPress={() =>
+                                                handleCardPress(
+                                                    item.$id
+                                                )
+                                            }
+                                        />
+                                    )}
+                                    keyExtractor={item =>
+                                        item.$id
+                                    }
+                                    horizontal
+                                    bounces={false}
+                                    showsHorizontalScrollIndicator={
+                                        false
+                                    }
+                                    contentContainerClassName="flex gap-5 mt-5"
+                                />
+                            )}
                         </View>
 
                         {/**Recommendations */}

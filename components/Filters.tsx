@@ -17,12 +17,12 @@ const Filters = () => {
         useState(params.filter || "All")
 
     const handleCategoryPress = (category: string) => {
-        if (selectedCategory === category) { 
+        if (selectedCategory === category) {
             setSelectedCategory("All")
             router.setParams({ filter: "All" })
-            return;
+            return
         }
-        setSelectedCategory(category);
+        setSelectedCategory(category)
         router.setParams({ filter: category })
     }
     return (
@@ -33,6 +33,7 @@ const Filters = () => {
         >
             {categories.map((item, index) => (
                 <TouchableOpacity
+                    key={index}
                     className={`flex flex-col items-start mr-4 px-4 py-2 rounded-full
                         ${
                             selectedCategory ===
